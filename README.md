@@ -1,6 +1,21 @@
 # K-Beauty MCP Server 🌸
 
-A Model Context Protocol (MCP) server providing comprehensive K-Beauty (Korean Beauty) information, ingredient analysis, and skincare routine recommendations.
+**The ultimate K-Beauty companion for Claude Desktop!** 
+
+A Model Context Protocol (MCP) server that brings the world of Korean Beauty directly to your AI assistant. Get expert skincare advice, product recommendations, ingredient analysis, and authentic K-Beauty knowledge - all through natural conversation with Claude.
+
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
+[![MCP Compatible](https://img.shields.io/badge/MCP-Compatible-brightgreen.svg)](https://modelcontextprotocol.io/)
+
+## Why K-Beauty MCP? 💫
+
+- **🏆 Authentic Knowledge**: Real K-Beauty expertise, not generic beauty advice
+- **🌍 Global Accessibility**: Works worldwide - no API keys or regional restrictions  
+- **⚡ Lightning Fast**: Instant responses with local data processing
+- **🔒 Privacy First**: Your skincare questions stay private - no external data sharing
+- **💰 Cost Effective**: Free forever - no subscription fees or usage limits
+- **🧠 Claude Integration**: Seamlessly works with Claude Desktop for natural conversations
 
 ## Features ✨
 
