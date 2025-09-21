@@ -11,16 +11,28 @@ A Model Context Protocol (MCP) server that provides comprehensive Korean Beauty 
 - Current trends and recommendations
 
 ### 💄 **Comprehensive Brand Database**
-- **Luxury Brands:** Sulwhasoo, Whoo, OHUI, Hera
-- **Popular Brands:** Laneige, Innisfree, Etude House, The Face Shop
-- **Indie/Effective:** COSRX, Beauty of Joseon, Purito, Dear Klairs
-- **Global Favorites:** Dr. Jart+, Banila Co, Son & Park
+- **58+ Major K-Beauty Brands**: From luxury giants to indie darlings
+- **Luxury Tier:** Sulwhasoo, Whoo, OHUI, Hera, IOPE, Sum37, Amorepacific
+- **Premium Brands:** Laneige, Mamonde, Etude House, Innisfree, The Face Shop
+- **Effective/Indie:** COSRX, Beauty of Joseon, Purito, Dear Klairs, Benton
+- **Emerging Stars:** Round Lab, Anua, Haruharu Wonder, ABIB, Goodal
+- **Medical/Derma:** Dr. Jart+, Medicube, Dr.G, Lab No.4
+- **Makeup Leaders:** 3CE, Peripera, CLIO, ROM&ND, Espoir
 
-### 🧪 **Ingredient Analysis Engine**
-- **Star Ingredients:** Snail mucin, Ginseng, Centella asiatica, Propolis
-- **Traditional Hanbang:** Rice water, Mugwort, Red bean, Bamboo
-- **Modern Actives:** Niacinamide, Hyaluronic acid, Peptides, Ceramides
-- Safety ratings and compatibility checks
+### 🧪 **Advanced Ingredient Analysis**
+- **48+ Key Ingredients**: Traditional hanbang to modern innovations
+- **Traditional Korean:** Ginseng, rice water, green tea, mugwort, bamboo
+- **K-Beauty Innovations:** Snail mucin, bee venom, fermented ingredients
+- **Botanical Extracts:** Centella asiatica, camellia, cherry blossom, lotus
+- **Active Compounds:** Niacinamide, hyaluronic acid, ceramides, peptides
+- **Unique Minerals:** Volcanic ash, Jeju minerals, sea salt, pearl powder
+
+### 📊 **Complete Product Categories**
+- **43+ Product Types**: Every K-Beauty category covered
+- **Basic Skincare:** Cleansers, toners, essences, serums, moisturizers
+- **Treatment Products:** Exfoliators, masks, spot treatments, anti-aging
+- **Makeup:** BB/CC creams, cushions, lip tints, eyeshadows
+- **Body Care:** Lotions, hand creams, body oils, scrubs
 
 ### 💆‍♀️ **Personalized Skincare Routines**
 - Korean 10-step routine customization
@@ -151,13 +163,21 @@ Assistant: [Detailed analysis of snail secretion benefits, safety, best products
 
 ### Real-Time Information
 - **Live Web Search:** Always up-to-date product info and reviews
-- **Current Pricing:** Latest prices and availability
-- **Trend Tracking:** What's popular right now in K-Beauty
+- **58+ Brand Recognition:** Automatically recognizes major to indie K-Beauty brands
+- **Current Pricing:** Latest prices and availability across regions
+- **Trend Tracking:** What's popular right now in K-Beauty globally
+
+### Unlimited Brand Coverage
+- **No Restrictions:** Unlike hardcoded databases, searches ANY K-Beauty brand
+- **Emerging Brands:** Discovers new and trending Korean beauty brands
+- **Regional Brands:** Finds local Korean brands not available globally  
+- **Complete Coverage:** From luxury conglomerates to one-person indie brands
 
 ### Cultural Context
-- **Traditional Hanbang:** Korean traditional medicine ingredients
-- **Modern Innovation:** How Korean brands revolutionized skincare
+- **Traditional Hanbang:** Korean traditional medicine ingredients explained
+- **Modern Innovation:** How Korean brands revolutionized global skincare
 - **Cultural Significance:** Understanding the philosophy behind K-Beauty
+- **Historical Background:** Traditional Korean beauty practices and their evolution
 
 ### Practical Guidance
 - **Step-by-Step Routines:** Clear, actionable skincare guidance
@@ -170,7 +190,16 @@ Assistant: [Detailed analysis of snail secretion benefits, safety, best products
 - **Language:** Python 3.8+
 - **Framework:** Model Context Protocol (MCP)
 - **Search Engine:** DuckDuckGo API (no API key required)
-- **Fallback Database:** Curated K-Beauty knowledge
+- **Brand Coverage:** 58+ major K-Beauty brands with unlimited search
+- **Ingredient Database:** 48+ traditional and modern K-Beauty ingredients
+- **Product Categories:** 43+ complete skincare and makeup categories
+- **Skin Concerns:** 21+ targeted skin concern categories
+
+### Smart Recognition System
+- **Auto-Brand Detection:** Recognizes 58+ K-Beauty brands automatically
+- **Context Enhancement:** Adds Korean beauty context to all searches
+- **Intelligent Queries:** Optimizes search terms for better K-Beauty results
+- **Cultural Integration:** Includes traditional Korean medicine (hanbang) context
 
 ### Dependencies
 - `mcp>=1.0.0` - Model Context Protocol
