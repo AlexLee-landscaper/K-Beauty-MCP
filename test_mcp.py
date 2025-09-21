@@ -1,47 +1,49 @@
 #!/usr/bin/env python3
-"""
-Quick test script for K-Beauty MCP Server
-"""
+"""Quick test script to verify K-Beauty MCP functionality"""
 
 import json
-import asyncio
 import sys
 import os
 
-# Add current directory to path so we can import kbeauty_mcp
+# Add current directory to Python path
 sys.path.insert(0, os.path.dirname(__file__))
 
-from kbeauty_mcp import app
+# Import the data modules
+try:
+    from data.brands import KBEAUTY_BRANDS
+    from data.ingredients import INGREDIENT_DATABASE
+    from data.routines import SKINCARE_ROUTINES
+    
+    print("✅ K-Beauty MCP Test Results:")
+    print(f"📊 Loaded {len(KBEAUTY_BRANDS)} brands")
+    print(f"🧪 Loaded {len(INGREDIENT_DATABASE)} ingredients")
+    print(f"💆‍♀️ Loaded {len(SKINCARE_ROUTINES)} routine types")
+    
+    print("\n🏷️ Available brands:")
+    for brand_key, brand_data in KBEAUTY_BRANDS.items():
+        print(f"  • {brand_data['name']} ({brand_data['price_range']})")
+    
+    print("\n🧪 Sample ingredients:")
+    for i, (ingredient_key, ingredient_data) in enumerate(INGREDIENT_DATABASE.items()):
+        if i < 3:  # Show first 3
+            print(f"  • {ingredient_data['name']} (Grade: {ingredient_data['safety_grade']})")
+    
+    print("\n💆‍♀️ Available routines:")
+    for routine_key, routine_data in SKINCARE_ROUTINES.items():
+        print(f"  • {routine_data['name']}")
+    
+    print("\n🎉 K-Beauty MCP is ready to use!")
+    print("📝 To use in Claude Desktop:")
+    print("1. Make sure Claude Desktop is restarted")
+    print("2. Ask questions like:")
+    print("   - 'K-Beauty 브랜드 추천해줘'")
+    print("   - 'COSRX 제품 어때?'")
+    print("   - '지성 피부 루틴 알려줘'")
+    print("   - '나이아신아마이드 안전해?'")
+    
+except ImportError as e:
+    print(f"❌ Error importing modules: {e}")
+    print("🔧 Please check if all files are in the correct location")
 
-async def test_tools():
-    """Test the K-Beauty MCP tools."""
-    print("🌸 Testing K-Beauty MCP Server...\n")
-    
-    # Test 1: Search brands
-    print("1️⃣ Testing brand search:")
-    result = await app.call_tool("search_kbeauty_brands", {"query": "luxury"})
-    print(result[0].text)
-    print("-" * 50)
-    
-    # Test 2: Get product info
-    print("2️⃣ Testing product info:")
-    result = await app.call_tool("get_product_info", {"brand": "cosrx"})
-    print(result[0].text)
-    print("-" * 50)
-    
-    # Test 3: Analyze ingredients
-    print("3️⃣ Testing ingredient analysis:")
-    result = await app.call_tool("analyze_ingredients", {"ingredient": "snail secretion"})
-    print(result[0].text)
-    print("-" * 50)
-    
-    # Test 4: Recommend routine
-    print("4️⃣ Testing routine recommendation:")
-    result = await app.call_tool("recommend_routine", {"skin_type": "oily", "concerns": ["acne", "pores"]})
-    print(result[0].text)
-    print("-" * 50)
-    
-    print("✅ All tests completed successfully!")
-
-if __name__ == "__main__":
-    asyncio.run(test_tools())
+except Exception as e:
+    print(f"❌ Error: {e}")

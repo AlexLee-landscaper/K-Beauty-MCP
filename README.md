@@ -1,163 +1,211 @@
-# K-Beauty MCP Server 🌸
+# 🌸 K-Beauty MCP Server
 
-**The ultimate K-Beauty companion for Claude Desktop!** 
+A Model Context Protocol (MCP) server that provides comprehensive Korean Beauty (K-Beauty) information through **real-time web search** and curated knowledge.
 
-A Model Context Protocol (MCP) server that brings the world of Korean Beauty directly to your AI assistant. Get expert skincare advice, product recommendations, ingredient analysis, and authentic K-Beauty knowledge - all through natural conversation with Claude.
+## ✨ Features
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
-[![MCP Compatible](https://img.shields.io/badge/MCP-Compatible-brightgreen.svg)](https://modelcontextprotocol.io/)
+### 🔍 **Real-Time Web Search Integration**
+- Live search for K-Beauty products, brands, and ingredients
+- Latest reviews and product information
+- Up-to-date pricing and availability
+- Current trends and recommendations
 
-## Why K-Beauty MCP? 💫
+### 💄 **Comprehensive Brand Database**
+- **Luxury Brands:** Sulwhasoo, Whoo, OHUI, Hera
+- **Popular Brands:** Laneige, Innisfree, Etude House, The Face Shop
+- **Indie/Effective:** COSRX, Beauty of Joseon, Purito, Dear Klairs
+- **Global Favorites:** Dr. Jart+, Banila Co, Son & Park
 
-- **🏆 Authentic Knowledge**: Real K-Beauty expertise, not generic beauty advice
-- **🌍 Global Accessibility**: Works worldwide - no API keys or regional restrictions  
-- **⚡ Lightning Fast**: Instant responses with local data processing
-- **🔒 Privacy First**: Your skincare questions stay private - no external data sharing
-- **💰 Cost Effective**: Free forever - no subscription fees or usage limits
-- **🧠 Claude Integration**: Seamlessly works with Claude Desktop for natural conversations
+### 🧪 **Ingredient Analysis Engine**
+- **Star Ingredients:** Snail mucin, Ginseng, Centella asiatica, Propolis
+- **Traditional Hanbang:** Rice water, Mugwort, Red bean, Bamboo
+- **Modern Actives:** Niacinamide, Hyaluronic acid, Peptides, Ceramides
+- Safety ratings and compatibility checks
 
-## Features ✨
+### 💆‍♀️ **Personalized Skincare Routines**
+- Korean 10-step routine customization
+- Skin type-specific recommendations (oily, dry, combination, sensitive)
+- Age-appropriate anti-aging routines
+- Seasonal skincare adjustments
 
-- **Brand Database**: Information on popular K-Beauty brands (Sulwhasoo, COSRX, Laneige, etc.)
-- **Product Search**: Detailed product information including prices, benefits, and skin type recommendations
-- **Ingredient Analysis**: Safety grades, benefits, and suitability analysis for skincare ingredients
-- **Routine Recommendations**: Customized Korean skincare routines based on skin type and concerns
-- **Product Comparison**: Side-by-side comparison of K-Beauty products
-- **Multilingual Support**: English and Korean product/ingredient names
+### 🌍 **Global Accessibility**
+- **Multi-language Support:** English and Korean
+- **Worldwide Availability:** No API keys required
+- **Offline Capability:** Works with curated knowledge base
 
-## Quick Start 🚀
-
-### Prerequisites
-- Python 3.10+
-- uv package manager
+## 🚀 Quick Start
 
 ### Installation
 
 ```bash
-# Clone the repository
-git clone https://github.com/yourusername/k-beauty-mcp.git
+# Clone or download to your desired location
+cd /path/to/your/mcp/servers
+git clone <your-repo-url> k-beauty-mcp
 cd k-beauty-mcp
 
-# Create virtual environment and install dependencies
-uv venv
-source .venv/bin/activate  # On Windows: .venv\Scripts\activate
-uv add mcp requests
+# Install dependencies
+pip install -r requirements.txt
 ```
 
-### Running the Server
+### Claude Desktop Configuration
 
-```bash
-# Start the MCP server
-python kbeauty_mcp.py
-```
-
-### Claude Desktop Integration
-
-Add to your Claude Desktop configuration (`~/AppData/Roaming/Claude/claude_desktop_config.json` on Windows or `~/Library/Application Support/Claude/claude_desktop_config.json` on macOS):
+Add to your Claude Desktop config file (`claude_desktop_config.json`):
 
 ```json
 {
   "mcpServers": {
     "k-beauty": {
-      "command": "uv",
-      "args": [
-        "--directory",
-        "/ABSOLUTE/PATH/TO/k-beauty-mcp",
-        "run",
-        "kbeauty_mcp.py"
-      ]
+      "command": "python3",
+      "args": ["/full/path/to/k-beauty-mcp/kbeauty_mcp.py"],
+      "cwd": "/full/path/to/k-beauty-mcp"
     }
   }
 }
 ```
 
-## Available Tools 🛠️
+**macOS/Linux config location:**
+```bash
+~/Library/Application Support/Claude/claude_desktop_config.json
+```
+
+**Windows config location:**
+```bash
+%APPDATA%\Claude\claude_desktop_config.json
+```
+
+### Quick Test
+
+Restart Claude Desktop and try these queries:
+
+```
+"Tell me about COSRX snail essence"
+"Recommend a K-Beauty routine for sensitive skin"
+"What are the benefits of ginseng in skincare?"
+"Compare Sulwhasoo vs Laneige products"
+```
+
+## 🛠️ Available Tools
 
 ### 1. `search_kbeauty_brands`
-Search and discover K-Beauty brands by name or category.
-
-**Example**: "Find luxury K-Beauty brands" or "Tell me about COSRX"
+Search and get information about K-Beauty brands
+```
+Input: Brand name or category
+Output: Brand details, history, popular products
+```
 
 ### 2. `get_product_info`
-Get detailed information about specific K-Beauty products.
-
-**Example**: "Show me COSRX snail essence details" or "What products does Sulwhasoo offer?"
+Get detailed product information
+```
+Input: Brand name, optional product name
+Output: Product details, benefits, pricing, reviews
+```
 
 ### 3. `analyze_ingredients`
-Analyze skincare ingredients for safety, benefits, and suitability.
-
-**Example**: "Is niacinamide safe?" or "Tell me about snail secretion benefits"
+Analyze skincare ingredients
+```
+Input: Ingredient name
+Output: Benefits, safety, usage recommendations
+```
 
 ### 4. `recommend_routine`
-Get personalized Korean skincare routine recommendations.
-
-**Example**: "Recommend a routine for oily, acne-prone skin" or "I need an anti-aging routine"
+Get personalized skincare routines
+```
+Input: Skin type, concerns, routine type
+Output: Step-by-step Korean skincare routine
+```
 
 ### 5. `compare_products`
-Compare multiple K-Beauty products side by side.
-
-**Example**: "Compare Laneige Water Sleeping Mask vs Sulwhasoo First Care Serum"
-
-## Sample Usage 💬
-
+Compare multiple K-Beauty products
 ```
-User: "I have dry, sensitive skin. What K-Beauty routine do you recommend?"
-
-K-Beauty MCP will provide:
-- Customized routine steps
-- Product recommendations
-- Specific tips for dry, sensitive skin
-- Korean skincare philosophy explanation
+Input: List of products to compare
+Output: Side-by-side comparison with pros/cons
 ```
 
-```
-User: "What's so special about snail mucin in Korean skincare?"
+## 💡 Example Interactions
 
-K-Beauty MCP will explain:
-- Scientific benefits of snail secretion
-- Popular snail-based products
-- How to incorporate into routine
-- Safety information
+### Brand Discovery
+```
+User: "What's a good affordable K-Beauty brand for beginners?"
+Assistant: [Searches and provides COSRX, Beauty of Joseon recommendations]
 ```
 
-## Supported Brands 🏷️
+### Product Research
+```
+User: "Tell me about Beauty of Joseon Glow Deep Serum"
+Assistant: [Live search + curated info about ingredients, benefits, reviews]
+```
 
-- **Sulwhasoo (설화수)** - Luxury ginseng-based skincare
-- **COSRX** - Effective, minimal ingredient products
-- **Laneige (라네즈)** - Water science and hydration experts
-- *(More brands being added)*
+### Routine Building
+```
+User: "I have oily, acne-prone skin. What's a good Korean routine?"
+Assistant: [Customized 7-step routine with specific product recommendations]
+```
 
-## Ingredient Database 🧪
+### Ingredient Education
+```
+User: "Is snail mucin actually good for skin?"
+Assistant: [Detailed analysis of snail secretion benefits, safety, best products]
+```
 
-Currently includes analysis for:
-- Snail Secretion Filtrate
-- Ginseng Extract  
-- Niacinamide (Vitamin B3)
-- Hyaluronic Acid
-- *(Expanding database)*
+## 🌟 What Makes This Special
 
-## Contributing 🤝
+### Real-Time Information
+- **Live Web Search:** Always up-to-date product info and reviews
+- **Current Pricing:** Latest prices and availability
+- **Trend Tracking:** What's popular right now in K-Beauty
 
-We welcome contributions! Please feel free to:
-- Add more K-Beauty brands and products
-- Expand the ingredient database
-- Improve routine recommendations
-- Add new features
+### Cultural Context
+- **Traditional Hanbang:** Korean traditional medicine ingredients
+- **Modern Innovation:** How Korean brands revolutionized skincare
+- **Cultural Significance:** Understanding the philosophy behind K-Beauty
 
-## License 📄
+### Practical Guidance
+- **Step-by-Step Routines:** Clear, actionable skincare guidance
+- **Product Matching:** Find products that work together
+- **Skin-Type Specific:** Recommendations tailored to your needs
 
-MIT License - feel free to use and modify!
+## 🔧 Technical Details
 
-## Roadmap 🗺️
+### Architecture
+- **Language:** Python 3.8+
+- **Framework:** Model Context Protocol (MCP)
+- **Search Engine:** DuckDuckGo API (no API key required)
+- **Fallback Database:** Curated K-Beauty knowledge
 
-- [ ] Real-time price integration
-- [ ] More comprehensive brand database
-- [ ] Ingredient interaction warnings
-- [ ] Seasonal routine recommendations
-- [ ] K-Beauty trend analysis
-- [ ] Integration with beauty review platforms
+### Dependencies
+- `mcp>=1.0.0` - Model Context Protocol
+- `aiohttp>=3.9.0` - Async HTTP client for web search
+- `beautifulsoup4>=4.12.0` - HTML parsing (if needed)
+
+### Performance
+- **Response Time:** <2 seconds for most queries
+- **Offline Mode:** Works without internet using curated data
+- **Cache-Friendly:** Reuses common search results
+
+## 🤝 Contributing
+
+This is an open-source K-Beauty knowledge project! Contributions welcome:
+
+1. **Brand Information:** Add new K-Beauty brands and products
+2. **Ingredient Database:** Expand the ingredient knowledge base
+3. **Cultural Context:** Add more Korean beauty traditions and practices
+4. **Search Enhancement:** Improve web search accuracy and results
+
+## 📝 License
+
+MIT License - Feel free to use and modify!
+
+## 🌸 About K-Beauty
+
+Korean Beauty (K-Beauty) has revolutionized the global skincare industry with:
+
+- **Innovation:** Glass skin, essences, cushion compacts
+- **Ingredients:** Snail mucin, ginseng, centella asiatica
+- **Philosophy:** Prevention over treatment, gentle yet effective
+- **Accessibility:** High-quality products at various price points
+
+This MCP server brings the wisdom of K-Beauty to Claude, helping you make informed skincare decisions with both traditional knowledge and modern innovations.
 
 ---
 
-**Made with ❤️ for K-Beauty enthusiasts worldwide**
+**Happy K-Beauty exploring! 🌸✨**

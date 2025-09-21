@@ -1,0 +1,1 @@
+# K-Beauty MCP Data Package

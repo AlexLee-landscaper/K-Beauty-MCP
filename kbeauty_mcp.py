@@ -2,158 +2,250 @@
 """
 K-Beauty MCP Server
 A Model Context Protocol server providing K-Beauty product information, 
-ingredient analysis, and skincare routine recommendations.
+ingredient analysis, and skincare routine recommendations through web search.
 """
 
 import json
 import logging
+import aiohttp
+import asyncio
 from typing import Dict, List, Any, Optional
 from mcp.server import Server
 from mcp.types import Tool, TextContent
-import asyncio
+from urllib.parse import quote
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# K-Beauty Database (Static Data)
-KBEAUTY_BRANDS = {
-    "sulwhasoo": {
-        "name": "Sulwhasoo (설화수)",
-        "origin": "South Korea",
-        "founded": 1966,
-        "category": "Luxury",
-        "key_ingredients": ["Ginseng", "Jadecite", "Korean Herbs"],
-        "popular_products": [
-            {
-                "name": "First Care Activating Serum",
-                "type": "serum",
-                "price_usd": 90,
-                "key_benefits": ["Anti-aging", "Brightening", "Firming"],
-                "skin_types": ["All", "Mature"]
-            },
-            {
-                "name": "Concentrated Ginseng Renewing Cream",
-                "type": "moisturizer", 
-                "price_usd": 280,
-                "key_benefits": ["Deep moisturizing", "Anti-wrinkle", "Regeneration"],
-                "skin_types": ["Dry", "Mature"]
-            }
-        ]
-    },
-    "cosrx": {
-        "name": "COSRX",
-        "origin": "South Korea", 
-        "founded": 2013,
-        "category": "Affordable/Effective",
-        "key_ingredients": ["Snail Secretion", "AHA", "BHA", "Niacinamide"],
-        "popular_products": [
-            {
-                "name": "Snail 96 Mucin Power Essence",
-                "type": "essence",
-                "price_usd": 17,
-                "key_benefits": ["Healing", "Moisturizing", "Acne recovery"],
-                "skin_types": ["Acne-prone", "Sensitive", "Dry"]
-            },
-            {
-                "name": "AHA/BHA Clarifying Treatment Toner",
-                "type": "toner",
-                "price_usd": 17,
-                "key_benefits": ["Exfoliation", "Pore care", "Texture improvement"],
-                "skin_types": ["Oily", "Combination", "Acne-prone"]
-            }
-        ]
-    },
-    "laneige": {
-        "name": "Laneige (라네즈)",
-        "origin": "South Korea",
-        "founded": 1994, 
-        "category": "Premium",
-        "key_ingredients": ["Water Science", "Hydro Ionized Mineral Water"],
-        "popular_products": [
-            {
-                "name": "Water Sleeping Mask",
-                "type": "sleeping_mask",
-                "price_usd": 34,
-                "key_benefits": ["Overnight hydration", "Skin barrier repair"],
-                "skin_types": ["Dry", "Dehydrated", "All"]
-            },
-            {
-                "name": "Lip Sleeping Mask",
-                "type": "lip_care",
-                "price_usd": 24,
-                "key_benefits": ["Lip hydration", "Exfoliation", "Softening"],
-                "skin_types": ["All"]
-            }
-        ]
-    }
-}
-
-INGREDIENT_DATABASE = {
-    "snail_secretion": {
-        "name": "Snail Secretion Filtrate",
-        "korean_name": "달팽이 분비물",
-        "benefits": ["Healing", "Moisturizing", "Anti-inflammatory", "Acne scar reduction"],
-        "safety_grade": "A",
-        "suitable_for": ["Sensitive", "Acne-prone", "Damaged skin"],
-        "concentration": "Usually 92-96%"
-    },
-    "ginseng": {
-        "name": "Ginseng Extract",
-        "korean_name": "인삼 추출물", 
-        "benefits": ["Anti-aging", "Circulation boost", "Firming", "Brightening"],
-        "safety_grade": "A",
-        "suitable_for": ["Mature", "Dull", "All skin types"],
-        "concentration": "Varies"
-    },
-    "niacinamide": {
-        "name": "Niacinamide (Vitamin B3)",
-        "korean_name": "나이아신아마이드",
-        "benefits": ["Pore minimizing", "Oil control", "Brightening", "Barrier strengthening"],
-        "safety_grade": "A",
-        "suitable_for": ["Oily", "Combination", "Acne-prone"],
-        "concentration": "2-10%"
-    },
-    "hyaluronic_acid": {
-        "name": "Hyaluronic Acid",
-        "korean_name": "히알루론산",
-        "benefits": ["Deep hydration", "Plumping", "Water retention"],
-        "safety_grade": "A",
-        "suitable_for": ["All skin types", "Especially dry"],
-        "concentration": "0.1-2%"
-    }
-}
-
-SKINCARE_ROUTINES = {
-    "basic_korean": {
-        "name": "Basic Korean Skincare Routine",
-        "steps": [
-            {"step": 1, "type": "cleanser", "description": "Oil cleanser (if wearing makeup)"},
-            {"step": 2, "type": "cleanser", "description": "Water-based cleanser"},
-            {"step": 3, "type": "toner", "description": "Hydrating toner"},
-            {"step": 4, "type": "essence", "description": "First essence or treatment"},
-            {"step": 5, "type": "serum", "description": "Targeted treatment serum"},
-            {"step": 6, "type": "moisturizer", "description": "Moisturizer"},
-            {"step": 7, "type": "sunscreen", "description": "SPF 30+ (AM only)"}
-        ]
-    },
-    "anti_aging": {
-        "name": "K-Beauty Anti-Aging Routine", 
-        "steps": [
-            {"step": 1, "type": "cleanser", "description": "Gentle cleansing oil"},
-            {"step": 2, "type": "cleanser", "description": "Low pH cleanser"},
-            {"step": 3, "type": "toner", "description": "Anti-aging toner"},
-            {"step": 4, "type": "essence", "description": "Ginseng or fermented essence"},
-            {"step": 5, "type": "serum", "description": "Retinol or peptide serum"},
-            {"step": 6, "type": "eye_cream", "description": "Anti-aging eye cream"},
-            {"step": 7, "type": "moisturizer", "description": "Rich moisturizer"},
-            {"step": 8, "type": "sleeping_mask", "description": "Overnight mask (PM)"}
-        ]
-    }
+# Basic K-Beauty knowledge for enhanced search
+KBEAUTY_SEARCH_TERMS = {
+    "brands": [
+        "sulwhasoo", "laneige", "cosrx", "innisfree", "etude house", "the face shop",
+        "missha", "tony toly", "banila co", "dear klairs", "purito", "son & park",
+        "heimish", "beauty of joseon", "dr jart", "mamonde", "iope", "hera",
+        "whoo", "ohui", "sum37", "amorepacific", "skinfood", "nature republic"
+    ],
+    "product_types": [
+        "essence", "serum", "toner", "cleanser", "moisturizer", "sunscreen",
+        "sleeping mask", "sheet mask", "eye cream", "lip balm", "bb cream",
+        "cushion", "ampoule", "emulsion", "facial oil", "exfoliator"
+    ],
+    "ingredients": [
+        "snail mucin", "ginseng", "niacinamide", "hyaluronic acid", "centella asiatica",
+        "propolis", "honey", "green tea", "rice water", "fermented ingredients",
+        "peptides", "retinol", "vitamin c", "aha", "bha", "ceramides"
+    ]
 }
 
 # Initialize MCP Server
 app = Server("k-beauty-mcp")
+
+async def search_web(query: str, search_type: str = "general") -> str:
+    """Search the web for K-Beauty information using DuckDuckGo."""
+    try:
+        # Enhanced search queries for better results
+        if search_type == "brand":
+            search_query = f"{query} K-Beauty Korean cosmetics brand products review 2024"
+        elif search_type == "product":
+            search_query = f"{query} K-Beauty Korean skincare product review ingredients benefits"
+        elif search_type == "ingredient":
+            search_query = f"{query} skincare ingredient benefits safety K-Beauty Korean cosmetics"
+        elif search_type == "routine":
+            search_query = f"Korean skincare routine {query} K-Beauty steps products"
+        else:
+            search_query = f"{query} K-Beauty Korean beauty skincare"
+
+        # Use DuckDuckGo search (no API key required)
+        async with aiohttp.ClientSession() as session:
+            # DuckDuckGo instant answer API
+            ddg_url = f"https://api.duckduckgo.com/?q={quote(search_query)}&format=json&no_html=1&skip_disambig=1"
+            
+            async with session.get(ddg_url) as response:
+                if response.status == 200:
+                    data = await response.json()
+                    
+                    # Extract useful information
+                    result = f"🔍 **Search Results for '{query}'**\n\n"
+                    
+                    # Abstract (main summary)
+                    if data.get("Abstract"):
+                        result += f"**Overview:** {data['Abstract']}\n\n"
+                    
+                    # Related topics
+                    if data.get("RelatedTopics"):
+                        result += "**Related Information:**\n"
+                        for topic in data["RelatedTopics"][:3]:  # Limit to 3 results
+                            if isinstance(topic, dict) and topic.get("Text"):
+                                result += f"• {topic['Text'][:200]}...\n"
+                        result += "\n"
+                    
+                    # Definition if available
+                    if data.get("Definition"):
+                        result += f"**Definition:** {data['Definition']}\n\n"
+                    
+                    # Answer
+                    if data.get("Answer"):
+                        result += f"**Quick Answer:** {data['Answer']}\n\n"
+                    
+                    # If no results, provide fallback
+                    if not any([data.get("Abstract"), data.get("RelatedTopics"), data.get("Definition"), data.get("Answer")]):
+                        result += "No direct search results found. Providing curated K-Beauty information below.\n\n"
+                    
+                    return result
+                else:
+                    # Fallback if search fails
+                    return f"🔍 **Searching for '{query}'**\n\nSearch temporarily unavailable. Providing curated K-Beauty information below.\n\n"
+        
+    except Exception as e:
+        logger.error(f"Search error: {e}")
+        return f"🔍 **Searching for '{query}'**\n\nSearch service temporarily unavailable. Providing curated K-Beauty information below.\n\n"
+
+def enhance_search_with_knowledge(query: str, search_type: str) -> str:
+    """Enhance search queries with K-Beauty knowledge."""
+    query_lower = query.lower()
+    
+    # Add context based on recognized terms
+    context_additions = []
+    
+    for brand in KBEAUTY_SEARCH_TERMS["brands"]:
+        if brand in query_lower:
+            context_additions.append(f"Korean beauty brand {brand}")
+    
+    for product_type in KBEAUTY_SEARCH_TERMS["product_types"]:
+        if product_type in query_lower:
+            context_additions.append(f"K-Beauty {product_type}")
+    
+    for ingredient in KBEAUTY_SEARCH_TERMS["ingredients"]:
+        if ingredient in query_lower:
+            context_additions.append(f"Korean skincare ingredient {ingredient}")
+    
+    if context_additions:
+        return f"{query} {' '.join(context_additions[:2])}"  # Limit to avoid too long queries
+    
+    return query
+
+def get_fallback_info(query: str, info_type: str) -> str:
+    """Provide fallback information when search is not available."""
+    query_lower = query.lower()
+    
+    if info_type == "brand":
+        if "sulwhasoo" in query_lower:
+            return """**Sulwhasoo (설화수)**
+- **Origin:** South Korea (1966)
+- **Category:** Luxury K-Beauty
+- **Signature:** Traditional Korean herbal medicine meets modern skincare
+- **Key Ingredients:** Red ginseng, jade powder, Korean herbs
+- **Popular Products:** First Care Activating Serum, Concentrated Ginseng Renewing Cream
+- **Price Range:** $50-300 USD
+- **Best For:** Mature skin, anti-aging, luxury skincare experience"""
+        
+        elif "cosrx" in query_lower:
+            return """**COSRX**
+- **Origin:** South Korea (2013)
+- **Category:** Effective, affordable K-Beauty
+- **Philosophy:** "Expecting Tomorrow" - simple, effective ingredients
+- **Key Ingredients:** Snail secretion, AHA/BHA, niacinamide, centella
+- **Popular Products:** Snail 96 Mucin Power Essence, AHA/BHA Clarifying Treatment Toner
+- **Price Range:** $8-25 USD
+- **Best For:** Acne-prone skin, sensitive skin, beginners"""
+        
+        elif "laneige" in query_lower:
+            return """**Laneige (라네즈)**
+- **Origin:** South Korea (1994)
+- **Category:** Premium hydration specialist
+- **Signature:** Water Science Technology
+- **Key Ingredients:** Hydro Ionized Mineral Water, Sleep-tox technology
+- **Popular Products:** Water Sleeping Mask, Lip Sleeping Mask
+- **Price Range:** $20-60 USD
+- **Best For:** Dry skin, dehydration, overnight treatments"""
+        
+        elif "beauty of joseon" in query_lower or "joseon" in query_lower:
+            return """**Beauty of Joseon**
+- **Origin:** South Korea (2017)
+- **Category:** Affordable luxury with traditional ingredients
+- **Signature:** Korean dynasty-inspired skincare with hanbang ingredients
+- **Key Ingredients:** Ginseng, rice water, mugwort, red bean
+- **Popular Products:** Dynasty Cream, Glow Deep Serum, Relief Sun SPF 50+
+- **Price Range:** $12-35 USD
+- **Best For:** All skin types, sensitive skin, K-Beauty beginners"""
+        
+        elif "innisfree" in query_lower:
+            return """**Innisfree (이니스프리)**
+- **Origin:** South Korea (2000)
+- **Category:** Natural, eco-friendly K-Beauty
+- **Signature:** Jeju Island natural ingredients
+- **Key Ingredients:** Green tea, volcanic clay, orchid, camellia
+- **Popular Products:** Green Tea Seed Serum, Super Volcanic Pore Clay Mask
+- **Price Range:** $5-40 USD
+- **Best For:** Oily skin, natural skincare lovers, environmental consciousness"""
+        
+        elif "etude" in query_lower or "etude house" in query_lower:
+            return """**Etude House (에뛰드하우스)**
+- **Origin:** South Korea (1985)
+- **Category:** Playful, feminine K-Beauty and makeup
+- **Signature:** Sweet, girly concepts with effective formulas
+- **Key Ingredients:** Various, focused on color cosmetics and basic skincare
+- **Popular Products:** SoonJung line, Dear Darling Water Gel Tint, Sunprise SPF
+- **Price Range:** $3-25 USD
+- **Best For:** Young adults, makeup lovers, sensitive skin (SoonJung line)"""
+    
+    elif info_type == "ingredient":
+        if "snail" in query_lower:
+            return """**Snail Secretion Filtrate (달팽이 분비물)**
+- **Concentration:** Usually 92-96% in K-Beauty products
+- **Benefits:** Healing, moisturizing, anti-inflammatory, acne scar reduction
+- **How it works:** Rich in allantoin, glycolic acid, elastin, collagen
+- **Safety:** Generally very safe, suitable for sensitive skin
+- **Best Products:** COSRX Snail 96 Mucin Power Essence, Mizon Snail Recovery Gel
+- **Fun Fact:** Discovered accidentally when snail farmers noticed their hands became softer"""
+        
+        elif "ginseng" in query_lower:
+            return """**Ginseng Extract (인삼 추출물)**
+- **Type:** Korean Red Ginseng is most prized in K-Beauty
+- **Benefits:** Anti-aging, circulation boost, firming, brightening
+- **Active Compounds:** Ginsenosides, saponins
+- **Safety:** Very safe, suitable for all skin types
+- **Best Products:** Sulwhasoo First Care Activating Serum, Beauty of Joseon Glow Deep Serum
+- **Cultural Note:** Ginseng has been used in Korean traditional medicine for over 2000 years"""
+        
+        elif "centella" in query_lower or "cica" in query_lower:
+            return """**Centella Asiatica (센텔라 아시아티카)**
+- **Also Known As:** Tiger grass, Cica, Gotu kola
+- **Benefits:** Soothing, anti-inflammatory, wound healing, acne treatment
+- **Active Compounds:** Asiaticoside, madecassoside, asiatic acid
+- **Safety:** Extremely safe, perfect for sensitive and irritated skin
+- **Best Products:** Purito Centella Unscented Serum, Dr. Jart+ Cicapair line
+- **K-Beauty Innovation:** Korean brands pioneered its use in modern skincare"""
+        
+        elif "propolis" in query_lower or "honey" in query_lower:
+            return """**Propolis/Honey (프로폴리스/꿀)**
+- **Source:** Bee-derived natural ingredients
+- **Benefits:** Antibacterial, anti-inflammatory, healing, moisturizing
+- **Active Compounds:** Flavonoids, phenolic acids, enzymes
+- **Safety:** Generally safe, rare allergic reactions possible
+- **Best Products:** Beauty of Joseon Glow Deep Serum, Cosrx Propolis Light Ampule
+- **Korean Tradition:** Honey has been used in Korean traditional medicine for centuries"""
+        
+        elif "niacinamide" in query_lower:
+            return """**Niacinamide (나이아신아마이드)**
+- **Also Known As:** Vitamin B3, Nicotinamide
+- **Benefits:** Pore minimizing, oil control, brightening, barrier strengthening
+- **Concentration:** Effective at 2-10%, sweet spot at 5%
+- **Safety:** Very safe, suitable for all skin types including sensitive
+- **Best Products:** Paula's Choice 20% Niacinamide, The INKEY List Niacinamide
+- **K-Beauty Use:** Often combined with other actives in serums and essences"""
+        
+        elif "rice" in query_lower or "rice water" in query_lower:
+            return """**Rice Water/Rice Bran (쌀물/쌀겨)**
+- **Traditional Use:** Used by Japanese and Korean women for centuries
+- **Benefits:** Brightening, softening, anti-aging, gentle exfoliation
+- **Active Compounds:** Amino acids, vitamins B & E, minerals
+- **Safety:** Extremely gentle, suitable for all skin types
+- **Best Products:** Beauty of Joseon Dynasty Cream, I'm From Rice Toner
+- **Cultural Significance:** Rice is sacred in Korean culture, symbolizing purity and nourishment"""
+    
+    return f"For detailed information about '{query}', please search online for the latest reviews and product information."
 
 @app.list_tools()
 async def list_tools() -> List[Tool]:
@@ -253,100 +345,101 @@ async def list_tools() -> List[Tool]:
 
 @app.call_tool()
 async def call_tool(name: str, arguments: Dict[str, Any]) -> List[TextContent]:
-    """Handle tool calls."""
+    """Handle tool calls with web search integration."""
     
     if name == "search_kbeauty_brands":
-        query = arguments.get("query", "").lower()
-        results = []
+        query = arguments.get("query", "")
         
-        for brand_key, brand_data in KBEAUTY_BRANDS.items():
-            if query in brand_key.lower() or query in brand_data["name"].lower() or query in brand_data["category"].lower():
-                results.append(f"**{brand_data['name']}**\n"
-                             f"- Origin: {brand_data['origin']}\n"
-                             f"- Founded: {brand_data['founded']}\n" 
-                             f"- Category: {brand_data['category']}\n"
-                             f"- Key Ingredients: {', '.join(brand_data['key_ingredients'])}\n"
-                             f"- Popular Products: {len(brand_data['popular_products'])} products available\n")
+        # Enhance query for better search results
+        enhanced_query = enhance_search_with_knowledge(query, "brand")
         
-        if not results:
-            return [TextContent(type="text", text=f"No K-Beauty brands found matching '{query}'. Try: sulwhasoo, cosrx, laneige")]
+        # Try web search first
+        web_results = await search_web(enhanced_query, "brand")
         
-        return [TextContent(type="text", text="\n".join(results))]
+        # Add fallback knowledge
+        fallback_info = get_fallback_info(query, "brand")
+        
+        result = f"{web_results}\n\n**Known Information:**\n{fallback_info}"
+        
+        return [TextContent(type="text", text=result)]
     
     elif name == "get_product_info":
-        brand = arguments.get("brand", "").lower()
+        brand = arguments.get("brand", "")
         product_name = arguments.get("product_name", "")
         
-        if brand not in KBEAUTY_BRANDS:
-            return [TextContent(type="text", text=f"Brand '{brand}' not found. Available brands: {', '.join(KBEAUTY_BRANDS.keys())}")]
-        
-        brand_data = KBEAUTY_BRANDS[brand]
-        products = brand_data["popular_products"]
-        
+        # Create search query
         if product_name:
-            products = [p for p in products if product_name.lower() in p["name"].lower()]
-            if not products:
-                return [TextContent(type="text", text=f"Product '{product_name}' not found in {brand_data['name']}")]
+            search_query = f"{brand} {product_name}"
+        else:
+            search_query = f"{brand} products"
         
-        result = f"**{brand_data['name']} Products:**\n\n"
-        for product in products:
-            result += f"**{product['name']}**\n"
-            result += f"- Type: {product['type'].replace('_', ' ').title()}\n"
-            result += f"- Price: ${product['price_usd']} USD\n"
-            result += f"- Benefits: {', '.join(product['key_benefits'])}\n"
-            result += f"- Suitable for: {', '.join(product['skin_types'])} skin\n\n"
+        enhanced_query = enhance_search_with_knowledge(search_query, "product")
+        web_results = await search_web(enhanced_query, "product")
+        
+        # Add specific brand info if available
+        fallback_info = get_fallback_info(brand, "brand")
+        
+        result = f"{web_results}\n\n**Brand Information:**\n{fallback_info}"
         
         return [TextContent(type="text", text=result)]
     
     elif name == "analyze_ingredients":
-        ingredient = arguments.get("ingredient", "").lower().replace(" ", "_")
+        ingredient = arguments.get("ingredient", "")
         
-        # Try exact match first
-        ingredient_data = INGREDIENT_DATABASE.get(ingredient)
+        enhanced_query = enhance_search_with_knowledge(ingredient, "ingredient")
+        web_results = await search_web(enhanced_query, "ingredient")
         
-        # Try partial match
-        if not ingredient_data:
-            for key, data in INGREDIENT_DATABASE.items():
-                if ingredient in key or ingredient in data["name"].lower():
-                    ingredient_data = data
-                    break
+        # Add fallback knowledge
+        fallback_info = get_fallback_info(ingredient, "ingredient")
         
-        if not ingredient_data:
-            return [TextContent(type="text", text=f"Ingredient '{ingredient}' not found in database. Available: {', '.join(INGREDIENT_DATABASE.keys())}")]
-        
-        result = f"**{ingredient_data['name']}** ({ingredient_data['korean_name']})\n\n"
-        result += f"**Safety Grade:** {ingredient_data['safety_grade']}\n"
-        result += f"**Benefits:** {', '.join(ingredient_data['benefits'])}\n"
-        result += f"**Best for:** {', '.join(ingredient_data['suitable_for'])}\n"
-        result += f"**Typical Concentration:** {ingredient_data['concentration']}\n"
+        result = f"{web_results}\n\n**Ingredient Knowledge:**\n{fallback_info}"
         
         return [TextContent(type="text", text=result)]
     
     elif name == "recommend_routine":
-        skin_type = arguments.get("skin_type", "normal").lower()
+        skin_type = arguments.get("skin_type", "normal")
         concerns = arguments.get("concerns", [])
         routine_type = arguments.get("routine_type", "basic_korean")
         
-        if routine_type not in SKINCARE_ROUTINES:
-            routine_type = "basic_korean"
+        # Create search query for routine
+        concerns_text = " ".join(concerns) if concerns else ""
+        search_query = f"Korean skincare routine {skin_type} skin {concerns_text} {routine_type}"
         
-        routine = SKINCARE_ROUTINES[routine_type]
+        web_results = await search_web(search_query, "routine")
         
-        result = f"**{routine['name']}** for {skin_type.title()} Skin\n\n"
+        # Add basic routine structure
+        basic_routine = f"""**Basic Korean Skincare Routine Structure:**
+
+**Morning Routine:**
+1. Gentle cleanser (if needed)
+2. Toner/Essence
+3. Serum (Vitamin C)
+4. Moisturizer  
+5. Sunscreen (SPF 30+)
+
+**Evening Routine:**
+1. Oil cleanser (if wearing makeup)
+2. Water-based cleanser
+3. Toner
+4. Essence/First Treatment
+5. Serum/Ampoule
+6. Eye cream
+7. Moisturizer
+8. Sleeping mask (2-3x per week)
+
+**For {skin_type.title()} Skin Tips:**
+"""
         
-        if concerns:
-            result += f"**Targeting concerns:** {', '.join(concerns)}\n\n"
+        if skin_type.lower() == "oily":
+            basic_routine += "- Use gel/water-based products\n- Include BHA for pore care\n- Don't skip moisturizer!"
+        elif skin_type.lower() == "dry":
+            basic_routine += "- Layer hydrating essences\n- Use cream-based moisturizers\n- Add facial oils in winter"
+        elif skin_type.lower() == "sensitive":
+            basic_routine += "- Patch test everything\n- Avoid fragrances\n- Focus on barrier repair ingredients"
+        elif skin_type.lower() == "combination":
+            basic_routine += "- Use different products for T-zone and cheeks\n- Lightweight moisturizer overall\n- Spot treatments for oily areas"
         
-        for step in routine["steps"]:
-            result += f"**Step {step['step']}:** {step['description']}\n"
-        
-        result += f"\n**Tips for {skin_type} skin:**\n"
-        if skin_type == "oily":
-            result += "- Focus on lightweight, oil-free products\n- Use BHA for pore care\n- Don't skip moisturizer!"
-        elif skin_type == "dry":
-            result += "- Layer hydrating products\n- Use sleeping masks 2-3x per week\n- Avoid harsh exfoliants"
-        elif skin_type == "sensitive":
-            result += "- Patch test new products\n- Avoid fragrances and strong actives\n- Focus on barrier repair"
+        result = f"{web_results}\n\n{basic_routine}"
         
         return [TextContent(type="text", text=result)]
     
@@ -356,26 +449,21 @@ async def call_tool(name: str, arguments: Dict[str, Any]) -> List[TextContent]:
         if len(products) < 2:
             return [TextContent(type="text", text="Please provide at least 2 products to compare")]
         
-        result = "**K-Beauty Product Comparison**\n\n"
+        # Search for each product
+        comparison_results = "**K-Beauty Product Comparison**\n\n"
         
-        for i, product_query in enumerate(products):
-            brand = product_query.get("brand", "").lower()
-            product_name = product_query.get("product_name", "")
+        for i, product in enumerate(products):
+            brand = product.get("brand", "")
+            product_name = product.get("product_name", "")
             
-            if brand in KBEAUTY_BRANDS:
-                brand_data = KBEAUTY_BRANDS[brand]
-                matching_products = [p for p in brand_data["popular_products"] 
-                                   if product_name.lower() in p["name"].lower()]
-                
-                if matching_products:
-                    product = matching_products[0]
-                    result += f"**Product {i+1}: {product['name']}** ({brand_data['name']})\n"
-                    result += f"- Price: ${product['price_usd']} USD\n"
-                    result += f"- Type: {product['type'].replace('_', ' ').title()}\n"
-                    result += f"- Benefits: {', '.join(product['key_benefits'])}\n"
-                    result += f"- Best for: {', '.join(product['skin_types'])} skin\n\n"
+            search_query = f"{brand} {product_name} review ingredients benefits"
+            enhanced_query = enhance_search_with_knowledge(search_query, "product")
+            
+            comparison_results += f"**Product {i+1}: {brand} {product_name}**\n"
+            web_result = await search_web(enhanced_query, "product")
+            comparison_results += f"{web_result}\n\n"
         
-        return [TextContent(type="text", text=result)]
+        return [TextContent(type="text", text=comparison_results)]
     
     return [TextContent(type="text", text=f"Unknown tool: {name}")]
 
