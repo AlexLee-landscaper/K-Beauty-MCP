@@ -4,6 +4,12 @@ A Model Context Protocol (MCP) server that provides comprehensive Korean Beauty 
 
 ## ✨ Features
 
+### 📸 **AI-Powered Skin Analysis**
+- **Photo Upload Analysis**: Upload your selfie for personalized skin analysis
+- **Zone-by-Zone Assessment**: T-zone, cheeks, eye area, and mouth area analysis
+- **Smart Recommendations**: AI-generated K-Beauty routine based on your skin
+- **Concern Matching**: Targeted products for specific skin issues (acne, aging, dryness, etc.)
+
 ### 🔍 **Real-Time Web Search Integration**
 - Live search for K-Beauty products, brands, and ingredients
 - Latest reviews and product information
@@ -133,6 +139,20 @@ Input: List of products to compare
 Output: Side-by-side comparison with pros/cons
 ```
 
+### 6. `analyze_skin_photo` 🆕
+AI-powered facial skin analysis with personalized recommendations
+```
+Input: Base64 encoded selfie image + optional additional concerns
+Output: Zone-by-zone skin analysis + personalized K-Beauty routine
+```
+
+### 7. `skin_concern_matcher` 🆕
+Match specific skin concerns to targeted K-Beauty products
+```
+Input: Skin concerns list + skin type + budget preference
+Output: Targeted product recommendations for each concern
+```
+
 ## 💡 Example Interactions
 
 ### Brand Discovery
@@ -159,7 +179,25 @@ User: "Is snail mucin actually good for skin?"
 Assistant: [Detailed analysis of snail secretion benefits, safety, best products]
 ```
 
+### 🆕 AI Skin Analysis
+```
+User: [Uploads selfie] "Analyze my skin and recommend products"
+Assistant: [Provides zone-by-zone analysis + personalized K-Beauty routine]
+```
+
+### 🆕 Targeted Concern Matching
+```
+User: "I have acne and sensitivity issues, budget-friendly options please"
+Assistant: [Lists specific COSRX and Purito products for acne + sensitive skin]
+```
+
 ## 🌟 What Makes This Special
+
+### 📸 Revolutionary AI Skin Analysis
+- **Upload & Analyze**: Take a selfie and get instant skin analysis
+- **Zone-Based Assessment**: T-zone, cheeks, eyes analyzed separately
+- **Personalized Routines**: Custom K-Beauty routines based on your skin
+- **Smart Product Matching**: AI matches your concerns to specific products
 
 ### Real-Time Information
 - **Live Web Search:** Always up-to-date product info and reviews
@@ -205,6 +243,12 @@ Assistant: [Detailed analysis of snail secretion benefits, safety, best products
 - `mcp>=1.0.0` - Model Context Protocol
 - `aiohttp>=3.9.0` - Async HTTP client for web search
 - `beautifulsoup4>=4.12.0` - HTML parsing (if needed)
+
+### AI Skin Analysis
+- **Computer Vision**: Currently simulated analysis (production would use Google Vision AI, Azure Computer Vision)
+- **Zone Detection**: T-zone, cheeks, eye area, mouth area analysis
+- **Concern Mapping**: Automatic detection of acne, aging, dryness, sensitivity
+- **Product Matching**: AI-powered recommendations based on detected issues
 
 ### Performance
 - **Response Time:** <2 seconds for most queries

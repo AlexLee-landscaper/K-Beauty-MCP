@@ -9,9 +9,10 @@ import json
 import logging
 import aiohttp
 import asyncio
+import base64
 from typing import Dict, List, Any, Optional
 from mcp.server import Server
-from mcp.types import Tool, TextContent
+from mcp.types import Tool, TextContent, ImageContent
 from urllib.parse import quote
 
 # Configure logging
@@ -91,8 +92,52 @@ KBEAUTY_SEARCH_TERMS = {
     ]
 }
 
-# Initialize MCP Server
-app = Server("k-beauty-mcp")
+# Skin Analysis Knowledge Base
+SKIN_ANALYSIS_PATTERNS = {
+    "acne_indicators": [
+        "blackheads", "whiteheads", "inflammatory papules", "pustules",
+        "cystic acne", "comedones", "pimples", "blemishes"
+    ],
+    "aging_indicators": [
+        "fine lines", "wrinkles", "sagging", "loss of firmness",
+        "age spots", "dark spots", "uneven texture", "dullness"
+    ],
+    "dryness_indicators": [
+        "flaking", "rough texture", "tightness", "dull appearance",
+        "fine lines from dehydration", "lack of glow"
+    ],
+    "sensitivity_indicators": [
+        "redness", "irritation", "inflammation", "broken capillaries",
+        "reactive skin", "burning sensation", "stinging"
+    ],
+    "pigmentation_indicators": [
+        "dark spots", "melasma", "post-inflammatory hyperpigmentation",
+        "sun damage", "uneven skin tone", "freckles", "age spots"
+    ],
+    "oily_indicators": [
+        "excess shine", "enlarged pores", "blackheads", "greasy t-zone",
+        "frequent breakouts", "thick skin texture"
+    ]
+}
+
+SKIN_ZONE_ANALYSIS = {
+    "t_zone": {
+        "areas": ["forehead", "nose", "chin"],
+        "common_issues": ["oiliness", "blackheads", "enlarged pores", "acne"]
+    },
+    "cheek_area": {
+        "areas": ["left cheek", "right cheek"],
+        "common_issues": ["dryness", "sensitivity", "aging", "pigmentation"]
+    },
+    "eye_area": {
+        "areas": ["under eyes", "around eyes", "eyelids"],
+        "common_issues": ["fine lines", "dark circles", "puffiness", "dryness"]
+    },
+    "mouth_area": {
+        "areas": ["around mouth", "lips"],
+        "common_issues": ["fine lines", "dryness", "pigmentation"]
+    }
+}
 
 async def search_web(query: str, search_type: str = "general") -> str:
     """Search the web for K-Beauty information using DuckDuckGo."""
@@ -239,6 +284,9 @@ def get_brand_recognition_info(query: str) -> str:
 - Expert reviews and community recommendations
 """
 
+# Initialize MCP Server
+app = Server("k-beauty-mcp")
+
 @app.list_tools()
 async def list_tools() -> List[Tool]:
     """List available K-Beauty tools."""
@@ -331,6 +379,47 @@ async def list_tools() -> List[Tool]:
                     }
                 },
                 "required": ["products"]
+            }
+        ),
+        Tool(
+            name="analyze_skin_photo",
+            description="Analyze facial skin condition from uploaded photo and recommend K-Beauty products",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "image_data": {
+                        "type": "string",
+                        "description": "Base64 encoded image data of user's face"
+                    },
+                    "additional_info": {
+                        "type": "string",
+                        "description": "Additional skin concerns or preferences (optional)"
+                    }
+                },
+                "required": ["image_data"]
+            }
+        ),
+        Tool(
+            name="skin_concern_matcher",
+            description="Match specific skin concerns to K-Beauty product recommendations",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "concerns": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "List of specific skin concerns (acne, aging, dryness, sensitivity, pigmentation, etc.)"
+                    },
+                    "skin_type": {
+                        "type": "string",
+                        "description": "Overall skin type (oily, dry, combination, sensitive, normal)"
+                    },
+                    "budget": {
+                        "type": "string",
+                        "description": "Budget preference (budget, mid-range, luxury, all)"
+                    }
+                },
+                "required": ["concerns", "skin_type"]
             }
         )
     ]
@@ -512,6 +601,120 @@ When comparing K-Beauty products, consider:
 """
         
         return [TextContent(type="text", text=comparison_results)]
+    
+    elif name == "analyze_skin_photo":
+        image_data = arguments.get("image_data", "")
+        additional_info = arguments.get("additional_info", "")
+        
+        if not image_data:
+            return [TextContent(type="text", text="Please provide an image of your face for skin analysis.")]
+        
+        # Analyze the skin from the uploaded image
+        analysis = await analyze_skin_from_image(image_data)
+        
+        # Get K-Beauty recommendations based on analysis
+        recommendations = get_kbeauty_recommendations_from_analysis(analysis)
+        
+        # Add additional context if provided
+        if additional_info:
+            recommendations += f"\n\n### Additional Notes\nUser mentioned: {additional_info}"
+        
+        # Add web search for latest product reviews
+        if "primary_concerns" in analysis:
+            concerns = " ".join(analysis["primary_concerns"])
+            web_search_query = f"K-Beauty products for {concerns} Korean skincare routine"
+            web_results = await search_web(web_search_query, "product")
+            recommendations += f"\n\n### Latest Product Information\n{web_results}"
+        
+        return [TextContent(type="text", text=recommendations)]
+    
+    elif name == "skin_concern_matcher":
+        concerns = arguments.get("concerns", [])
+        skin_type = arguments.get("skin_type", "normal")
+        budget = arguments.get("budget", "all")
+        
+        if not concerns:
+            return [TextContent(type="text", text="Please specify your skin concerns for personalized recommendations.")]
+        
+        # Create a detailed search query
+        concerns_text = " ".join(concerns)
+        search_query = f"K-Beauty products for {concerns_text} {skin_type} skin {budget} budget Korean skincare"
+        
+        # Get web search results
+        web_results = await search_web(search_query, "product")
+        
+        # Create structured recommendations
+        result = f"## Targeted K-Beauty Recommendations\n\n"
+        result += f"**Skin Type:** {skin_type.title()}\n"
+        result += f"**Primary Concerns:** {', '.join([concern.title() for concern in concerns])}\n"
+        result += f"**Budget Preference:** {budget.title()}\n\n"
+        
+        # Add concern-specific recommendations
+        result += "### Concern-Specific Product Recommendations\n\n"
+        
+        for concern in concerns:
+            concern_lower = concern.lower()
+            result += f"#### For {concern.title()}:\n"
+            
+            if "acne" in concern_lower:
+                if budget in ["budget", "all"]:
+                    result += "- **COSRX BHA Blackhead Power Liquid** - Gentle yet effective BHA treatment\n"
+                    result += "- **COSRX Snail 96 Mucin Power Essence** - Healing and anti-inflammatory\n"
+                if budget in ["mid-range", "luxury", "all"]:
+                    result += "- **Beauty of Joseon Red Bean Water Gel** - Gentle moisture for acne-prone skin\n"
+                if budget in ["luxury", "all"]:
+                    result += "- **Sulwhasoo Clarifying Mask** - Deep pore cleansing with traditional herbs\n"
+            
+            elif "aging" in concern_lower or "wrinkle" in concern_lower:
+                if budget in ["budget", "all"]:
+                    result += "- **Beauty of Joseon Glow Deep Serum** - Alpha arbutin + niacinamide\n"
+                    result += "- **COSRX Retinol 0.1 Cream** - Gentle retinol for beginners\n"
+                if budget in ["mid-range", "luxury", "all"]:
+                    result += "- **Laneige Time Freeze Intensive Cream** - Advanced anti-aging formula\n"
+                if budget in ["luxury", "all"]:
+                    result += "- **Sulwhasoo Concentrated Ginseng Renewing Cream** - Premium anti-aging\n"
+            
+            elif "dry" in concern_lower or "dehydrat" in concern_lower:
+                if budget in ["budget", "all"]:
+                    result += "- **Laneige Water Sleeping Mask** - Overnight hydration boost\n"
+                    result += "- **COSRX Hyaluronic Acid Intensive Cream** - Deep moisture\n"
+                if budget in ["mid-range", "luxury", "all"]:
+                    result += "- **Laneige Cream Skin Refiner** - Toner-cream hybrid for extra moisture\n"
+                if budget in ["luxury", "all"]:
+                    result += "- **Sulwhasoo First Care Activating Serum** - Luxury hydrating treatment\n"
+            
+            elif "pigment" in concern_lower or "dark spot" in concern_lower:
+                if budget in ["budget", "all"]:
+                    result += "- **Beauty of Joseon Glow Deep Serum** - Alpha arbutin for brightening\n"
+                    result += "- **Purito Centella Unscented Serum** - Niacinamide for even tone\n"
+                if budget in ["mid-range", "luxury", "all"]:
+                    result += "- **Klairs Freshly Juiced Vitamin C Serum** - Gentle vitamin C\n"
+                if budget in ["luxury", "all"]:
+                    result += "- **Sulwhasoo Concentrated Ginseng Renewing Serum** - Brightening ginseng\n"
+            
+            elif "sensitive" in concern_lower:
+                if budget in ["budget", "all"]:
+                    result += "- **Purito Centella Unscented Recovery Cream** - Ultra-gentle moisture\n"
+                    result += "- **COSRX Snail 96 Mucin Power Essence** - Soothing and healing\n"
+                if budget in ["mid-range", "luxury", "all"]:
+                    result += "- **Dr. Jart+ Cicapair Tiger Grass Cream** - Centella for redness\n"
+                if budget in ["luxury", "all"]:
+                    result += "- **Sulwhasoo Gentle Cleansing Foam** - Ultra-mild cleansing\n"
+            
+            result += "\n"
+        
+        # Add web search results
+        result += f"### Latest Product Information\n{web_results}"
+        
+        # Add routine suggestions
+        result += "\n### Quick Routine Integration Tips\n"
+        result += "1. **Start Slowly**: Introduce one new product every 1-2 weeks\n"
+        result += "2. **Patch Test**: Always test new products on your inner arm first\n"
+        result += "3. **Layer Properly**: Thinnest to thickest consistency\n"
+        result += "4. **Morning vs Evening**: Use actives (BHA, retinol) at night\n"
+        result += "5. **Sun Protection**: Essential when using any active ingredients\n"
+        
+        return [TextContent(type="text", text=result)]
     
     return [TextContent(type="text", text=f"Unknown tool: {name}")]
 
